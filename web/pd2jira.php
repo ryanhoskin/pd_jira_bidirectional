@@ -16,7 +16,7 @@ if ($messages) foreach ($messages->messages as $webhook) {
   switch ($webhook_type) {
     case "incident.trigger" || "incident.resolve":
       //Die if the lock file is in use or if it's a trigger from JIRA
-      if(file_exists('lock.txt') && file_get_contents('lock.txt') > (time() - 5) {
+      if(file_exists('lock.txt') && file_get_contents('lock.txt') > (time() - 5)) {
         die('Should not run!');
       }
       //Extract values from the PagerDuty webhook
