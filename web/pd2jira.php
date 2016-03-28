@@ -68,6 +68,7 @@ if ($messages) foreach ($messages->messages as $webhook) {
       else if ($verb == "resolve") {
         $note_verb = "closed";
         $url = $url + $jira_issue_id + "/transitions";
+        error_log($url);
         $data = array('update'=>array('comment'=>array('add'=>"PagerDuty incident #$incident_number has been resolved.")),'transition'=>array('id'=>"$jira_transition_id"));
       }
       //POST to JIRA
