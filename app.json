@@ -22,6 +22,10 @@
     "JIRA_ISSUE_TYPE": {
       "description": "The type of issue that you'd like created within JIRA (e.g. Bug, Deliverable, etc...)."
     },
+    "JIRA_TRANSITION_ID": {
+      "description": "The ID of the transition that will be used for resolving incidents.  This can be found by accessing YOUR_JIRA_URL/rest/api/2/issue/YOUR_ISSUE_ID/transitions?expand=transition.fields",
+      "value": "1"
+    },
     "PAGERDUTY_API_TOKEN": {
       "description": "Your 20-character alphanumeric PagerDuty API Access token."
     },
