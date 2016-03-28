@@ -56,7 +56,7 @@ if ($messages) foreach ($messages->messages as $webhook) {
         }
       }
       error_log("jira_issue_id 2: " + $jira_issue_id);
-      error_log("transition_id: " + $jira_transition_id)
+      error_log("transition_id: " + $jira_transition_id);
 
       $url = "$jira_url/rest/api/2/issue/";
 
