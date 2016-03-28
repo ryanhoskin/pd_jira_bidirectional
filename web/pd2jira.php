@@ -34,7 +34,7 @@ if ($messages) foreach ($messages->messages as $webhook) {
       //Determine whether it's a trigger or resolve
       $verb = explode(".",$webhook_type)[1];
 
-      error_log("jira_issue_id: " + $jira_issue_id);
+      error_log("jira_issue_id: " . $jira_issue_id);
 
       //Let's make sure the note wasn't already added (Prevents a 2nd Jira ticket in the event the first request takes long enough to not succeed according to PagerDuty)
       $url = "https://$pd_subdomain.pagerduty.com/api/v1/incidents/$incident_id/notes";
@@ -55,8 +55,8 @@ if ($messages) foreach ($messages->messages as $webhook) {
           }
         }
       }
-      error_log("jira_issue_id 2: " + $jira_issue_id);
-      error_log("transition_id: " + $jira_transition_id);
+      error_log("jira_issue_id 2: " . $jira_issue_id);
+      error_log("transition_id: " . $jira_transition_id);
 
       $url = "$jira_url/rest/api/2/issue/";
 
@@ -67,7 +67,7 @@ if ($messages) foreach ($messages->messages as $webhook) {
       }
       else if ($verb == "resolve") {
         $note_verb = "closed";
-        $url = $url + $jira_issue_id + "/transitions";
+        $url = $url . $jira_issue_id . "/transitions";
         error_log($url);
         $data = array('update'=>array('comment'=>array('add'=>"PagerDuty incident #$incident_number has been resolved.")),'transition'=>array('id'=>"$jira_transition_id"));
       }
@@ -120,6 +120,7 @@ function http_request($url, $data_json, $method, $auth_type, $username, $token) 
   $status_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
   if(curl_errno($ch)){
     error_log('Curl error: ' . curl_error($ch));
+    error_log()
   }
   curl_close($ch);
   return array('status_code'=>"$status_code",'response'=>"$response");
