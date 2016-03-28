@@ -68,7 +68,7 @@ if ($messages) foreach ($messages->messages as $webhook) {
       else if ($verb == "resolve") {
         $note_verb = "closed";
         $url = $url + $jira_issue_id + "/transitions";
-        $data = array('update'=>'comment'=>array('add'=>"PagerDuty incident #$incident_number has been resolved."),'transition'=>'id',"$jira_transition_id");
+        $data = array('update'=>array('comment'=>array('add'=>"PagerDuty incident #$incident_number has been resolved.")),'transition'=>array('id'=>"$jira_transition_id"));
       }
       //POST to JIRA
       $data_json = json_encode($data);
