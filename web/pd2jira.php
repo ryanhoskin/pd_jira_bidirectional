@@ -120,7 +120,6 @@ function http_request($url, $data_json, $method, $auth_type, $username, $token) 
   $status_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
   if(curl_errno($ch)){
     error_log('Curl error: ' . curl_error($ch));
-    error_log()
   }
   curl_close($ch);
   return array('status_code'=>"$status_code",'response'=>"$response");
