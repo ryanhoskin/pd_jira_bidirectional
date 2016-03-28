@@ -71,8 +71,10 @@ if ($messages) foreach ($messages->messages as $webhook) {
         error_log($url);
         $data = array('update'=>array('comment'=>array('add'=>"PagerDuty incident #$incident_number has been resolved.")),'transition'=>array('id'=>"$jira_transition_id"));
       }
+
       //POST to JIRA
       $data_json = json_encode($data);
+      error_log($data_json);
       $return = http_request($url, $data_json, "POST", "basic", $jira_username, $jira_password);
       $status_code = $return['status_code'];
       $response = $return['response'];
