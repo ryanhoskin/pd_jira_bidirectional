@@ -69,7 +69,7 @@ if ($messages) foreach ($messages->messages as $webhook) {
         $note_verb = "closed";
         $url = $url . $jira_issue_id . "/transitions";
         error_log($url);
-        $data = array('update'=>array('comment'=>array('add'=>array('body'=>"PagerDuty incident #$incident_number has been resolved.")),'transition'=>array('id'=>"$jira_transition_id"));
+        $data = array('update'=>array('comment'=>array('add'=>array('body'=>"PagerDuty incident #$incident_number has been resolved."))),'transition'=>array('id'=>"$jira_transition_id"));
       }
 
       //POST to JIRA
