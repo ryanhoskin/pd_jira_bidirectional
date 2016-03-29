@@ -29,10 +29,13 @@ if ($messages) foreach ($messages->messages as $webhook) {
       $jira_issue_id = $webhook->data->incident->incident_key;
       $assignee = $webhook->data->incident->assigned_to_user->name;
       $trigger_summary_data = $webhook->data->incident->trigger_summary_data->description;
+      $client = $webhook->data->incident->trigger_summary_data->client;
       $summary = "PagerDuty Service: $service_name, Incident #$incident_number, Summary: $trigger_summary_data";
 
       //Determine whether it's a trigger or resolve
       $verb = explode(".",$webhook_type)[1];
+
+      if ($verb == "trigger" && $client == "JIRA") die('Do not trigger a new JIRA issue based on an existing JIRA issue.');
 
       error_log("jira_issue_id: " . $jira_issue_id);
 
