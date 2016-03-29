@@ -73,7 +73,7 @@ if ($messages) foreach ($messages->messages as $webhook) {
       }
 
       //POST to JIRA
-      $data_json = json_encode($data);
+      $data_json = json_encode(array_values($data));
       error_log($data_json);
       $return = http_request($url, $data_json, "POST", "basic", $jira_username, $jira_password);
       $status_code = $return['status_code'];
