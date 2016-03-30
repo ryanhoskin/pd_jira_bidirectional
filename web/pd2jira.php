@@ -18,7 +18,7 @@ if ($messages) foreach ($messages->messages as $webhook) {
       //Die if the lock file is in use or if it's a trigger from JIRA
       if(file_exists('lock.txt') && file_get_contents('lock.txt') > (time() - 5)) {
         die('Should not run!');
-        error_log("Already running.  Killing duplicate.")
+        error_log("Already running.  Killing duplicate.");
       }
       //Extract values from the PagerDuty webhook
       file_put_contents('lock.txt', time());
