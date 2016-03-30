@@ -54,7 +54,7 @@ if ($messages) foreach ($messages->messages as $webhook) {
             //Extract the JIRA issue ID for incidents that did not originate in JIRA
             elseif (substr($value['content'], 0, strlen($startsWith)) === $startsWith && verb == "resolve") {
               preg_match('/JIRA ticket (.*) has.*/', $value['content'], $m);
-              error_log("jira ticket id:" . $m[1])
+              error_log("jira ticket id:" . $m[1]);
               $jira_issue_id = $m[1];
             }
           }
