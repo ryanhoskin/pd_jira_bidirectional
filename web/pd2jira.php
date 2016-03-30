@@ -18,6 +18,7 @@ if ($messages) foreach ($messages->messages as $webhook) {
       //Die if the lock file is in use or if it's a trigger from JIRA
       if(file_exists('lock.txt') && file_get_contents('lock.txt') > (time() - 5)) {
         die('Should not run!');
+        error_log("Already running.  Killing duplicate.")
       }
       //Extract values from the PagerDuty webhook
       file_put_contents('lock.txt', time());
@@ -53,6 +54,7 @@ if ($messages) foreach ($messages->messages as $webhook) {
             //Extract the JIRA issue ID for incidents that did not originate in JIRA
             elseif (substr($value['content'], 0, strlen($startsWith)) === $startsWith && verb == "resolve") {
               preg_match('/JIRA ticket (.*) has.*/', $value['content'], $m);
+              error_log("jira ticket id:" . $m[1])
               $jira_issue_id = $m[1];
             }
           }
