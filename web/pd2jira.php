@@ -18,7 +18,7 @@ if ($messages) foreach ($messages->messages as $webhook) {
       //Die if the lock file is in use or if it's a trigger from JIRA
       if(file_exists('lock.txt') && file_get_contents('lock.txt') > (time() - 5)) {
         die('Should not run!');
-        error_log("Already running.  Killing duplicate.");
+        error_log("Already running.  Killing duplicate process.");
       }
       //Extract values from the PagerDuty webhook
       file_put_contents('lock.txt', time());
@@ -36,9 +36,7 @@ if ($messages) foreach ($messages->messages as $webhook) {
       //Determine whether it's a trigger or resolve
       $verb = explode(".",$webhook_type)[1];
 
-      if ($verb == "trigger" && $client == "JIRA") die('Do not trigger a new JIRA issue based on an existing JIRA issue.');
-
-      error_log("jira_issue_id: " . $jira_issue_id);
+      if ($verb == "trigger" && ($client == "JIRA" || substr($trigger_summary_data->subject, 0, 6) === "[JIRA]")) die('Do not trigger a new JIRA issue based on an existing JIRA issue.');
 
       //Let's make sure the note wasn't already added (Prevents a 2nd Jira ticket in the event the first request takes long enough to not succeed according to PagerDuty)
       $url = "https://$pd_subdomain.pagerduty.com/api/v1/incidents/$incident_id/notes";
@@ -54,14 +52,11 @@ if ($messages) foreach ($messages->messages as $webhook) {
             //Extract the JIRA issue ID for incidents that did not originate in JIRA
             elseif (substr($value['content'], 0, strlen($startsWith)) === $startsWith && $verb == "resolve") {
               preg_match('/JIRA ticket (.*) has.*/', $value['content'], $m);
-              error_log("jira ticket id:" . $m[1]);
               $jira_issue_id = $m[1];
             }
           }
         }
       }
-      error_log("jira_issue_id 2: " . $jira_issue_id);
-      error_log("transition_id: " . $jira_transition_id);
 
       $url = "$jira_url/rest/api/2/issue/";
 
@@ -79,7 +74,6 @@ if ($messages) foreach ($messages->messages as $webhook) {
 
       //POST to JIRA
       $data_json = json_encode($data);
-      error_log($data_json);
       $return = http_request($url, $data_json, "POST", "basic", $jira_username, $jira_password);
       $status_code = $return['status_code'];
       $response = $return['response'];
