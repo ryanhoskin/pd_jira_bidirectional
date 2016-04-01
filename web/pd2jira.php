@@ -31,13 +31,14 @@ if ($messages) foreach ($messages->messages as $webhook) {
       $assignee = $webhook->data->incident->assigned_to_user->name;
       $trigger_summary_data = $webhook->data->incident->trigger_summary_data->description;
       $client = $webhook->data->incident->trigger_summary_data->client;
+      $subject = $webhook->data->incident->trigger_summary_data->subject;
       $summary = "PagerDuty Service: $service_name, Incident #$incident_number, Summary: $trigger_summary_data";
 
       //Determine whether it's a trigger or resolve
       $verb = explode(".",$webhook_type)[1];
 
-      if ($verb == "trigger" && ($client == "JIRA" || substr($trigger_summary_data->subject, 0, 6) === "[JIRA]")) die('Do not trigger a new JIRA issue based on an existing JIRA issue.');
-      error_log("substr:" . $trigger_summary_data);
+      if ($verb == "trigger" && ($client == "JIRA" || substr($subject, 0, 6) === "[JIRA]")) die('Do not trigger a new JIRA issue based on an existing JIRA issue.');
+      error_log("substr:" . $subject);
       //Let's make sure the note wasn't already added (Prevents a 2nd Jira ticket in the event the first request takes long enough to not succeed according to PagerDuty)
       $url = "https://$pd_subdomain.pagerduty.com/api/v1/incidents/$incident_id/notes";
       $return = http_request($url, "", "GET", "token", "", $pd_api_token);
