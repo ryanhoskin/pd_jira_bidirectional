@@ -29,7 +29,12 @@ if ($messages) foreach ($messages->messages as $webhook) {
       $service_name = $webhook->data->incident->service->name;
       $jira_issue_id = $webhook->data->incident->incident_key;
       $assignee = $webhook->data->incident->assigned_to_user->name;
-      $trigger_summary_data = $webhook->data->incident->trigger_summary_data;
+      if ($webhook->data->incident->trigger_summary_data->description) {
+        $trigger_summary_data = $webhook->data->incident->trigger_summary_data->description;
+      }
+      else {
+        $trigger_summary_data = $webhook->data->incident->trigger_summary_data->subject;
+      }
       $client = $webhook->data->incident->trigger_summary_data->client;
       $subject = $webhook->data->incident->trigger_summary_data->subject;
       $summary = "PagerDuty Service: $service_name, Incident #$incident_number, Summary: $trigger_summary_data";
