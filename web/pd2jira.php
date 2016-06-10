@@ -2,6 +2,9 @@
 $messages = json_decode(file_get_contents("php://input"));
 
 $jira_url = getenv('JIRA_URL');
+if (substr($jira_url, strlen($jira_url)-1, 1) == "/") {
+  $jira_url = substr($jira_url, 0, strlen($jira_url)-1);
+}
 $jira_username = getenv('JIRA_USERNAME');
 $jira_password = getenv('JIRA_PASSWORD');
 $jira_project = getenv('JIRA_PROJECT');
@@ -12,6 +15,7 @@ $pd_api_token = getenv('PAGERDUTY_API_TOKEN');
 
 if ($messages) foreach ($messages->messages as $webhook) {
   $webhook_type = $webhook->type;
+  error_log('Received webhook');
 
   switch ($webhook_type) {
     case "incident.trigger" || "incident.resolve":
@@ -50,6 +54,7 @@ if ($messages) foreach ($messages->messages as $webhook) {
       if ($return['status_code'] == '200') {
         $response = json_decode($return['response'], true);
         if (array_key_exists("notes", $response)) {
+          $notes_data = array();
           foreach ($response['notes'] as $value) {
             $startsWith = "JIRA ticket";
             if (substr($value['content'], 0, strlen($startsWith)) === $startsWith && $verb == "trigger") {
@@ -59,50 +64,63 @@ if ($messages) foreach ($messages->messages as $webhook) {
             elseif (substr($value['content'], 0, strlen($startsWith)) === $startsWith && $verb == "resolve") {
               preg_match('/JIRA ticket (.*) has.*/', $value['content'], $m);
               $jira_issue_id = $m[1];
-            }
+             }
+             else {
+               // Concat all the non-ack notes
+               $notes_data[] = $value['content'];
+             }
           }
         }
       }
 
-      $url = "$jira_url/rest/api/2/issue/";
+      $base_url = "$jira_url/rest/api/2/issue/";
 
       //Build the data JSON blobs to be sent to JIRA
       if ($verb == "trigger") {
         $note_verb = "created";
         $data = array('fields'=>array('project'=>array('key'=>"$jira_project"),'summary'=>"$summary",'description'=>"A new PagerDuty ticket as been created.  {$trigger_summary_data}. Please go to $ticket_url to view it.", 'issuetype'=>array('name'=>"$jira_issue_type")));
+        post_to_jira($data, $base_url, $jira_username, $jira_password, $pd_subdomain, $incident_id, $note_verb, $jira_url, $pd_requester_id, $pd_api_token);
       }
-      else if ($verb == "resolve") {
+      elseif ($verb == "resolve") {
         $note_verb = "closed";
-        $url = $url . $jira_issue_id . "/transitions";
-        error_log($url);
+        $url = $base_url . $jira_issue_id . "/transitions";
         $data = array('update'=>array('comment'=>array(array('add'=>array('body'=>"PagerDuty incident #$incident_number has been resolved.")))),'transition'=>array('id'=>"$jira_transition_id"));
+        post_to_jira($data, $url, $jira_username, $jira_password, $pd_subdomain, $incident_id, $note_verb, $jira_url, $pd_requester_id, $pd_api_token);
+        // When an incident is resolved, add all notes from PagerDuty to the Jira ticket
+        $url = $base_url . $jira_issue_id . "/comment";
+        foreach ($notes_data as $note) {
+          $data = array('body'=>"$note");
+          post_to_jira($data, $url, $jira_username, $jira_password, $pd_subdomain, $incident_id, $note_verb, $jira_url, $pd_requester_id, $pd_api_token);
+        }
       }
 
-      //POST to JIRA
-      $data_json = json_encode($data);
-      $return = http_request($url, $data_json, "POST", "basic", $jira_username, $jira_password);
-      $status_code = $return['status_code'];
-      $response = $return['response'];
-      $response_obj = json_decode($response);
-      $response_key = $response_obj->key;
-
-      $url = "https://$pd_subdomain.pagerduty.com/api/v1/incidents/$incident_id/notes";
-
-      if ($status_code == "201"  || $status_code == "204") {
-        //Update the PagerDuty ticket with the JIRA ticket information.
-        $data = array('note'=>array('content'=>"JIRA ticket $response_key has been $note_verb.  You can view it at $jira_url/browse/$response_key."),'requester_id'=>"$pd_requester_id");
-        $data_json = json_encode($data);
-        http_request($url, $data_json, "POST", "token", "", $pd_api_token);
-      }
-      else {
-        //Update the PagerDuty ticket if the JIRA ticket isn't made.
-        $data = array('note'=>array('content'=>"There was an issue communicating with JIRA. $response"),'requester_id'=>"$pd_requester_id");
-        $data_json = json_encode($data);
-        http_request($url, $data_json, "POST", "token", "", $pd_api_token);
-      }
       break;
     default:
       continue;
+  }
+}
+
+function post_to_jira($data, $url, $jira_username, $jira_password, $pd_subdomain, $incident_id, $note_verb, $jira_url, $pd_requester_id, $pd_api_token) {
+  $data_json = json_encode($data);
+  $return = http_request($url, $data_json, "POST", "basic", $jira_username, $jira_password);
+  $status_code = $return['status_code'];
+  $response = $return['response'];
+  $response_obj = json_decode($response);
+  $response_key = $response_obj->key;
+
+  $url = "https://$pd_subdomain.pagerduty.com/api/v1/incidents/$incident_id/notes";
+
+  if ($status_code == "201"  || $status_code == "204") {
+    //Update the PagerDuty ticket with the JIRA ticket information.
+    $data = array('note'=>array('content'=>"JIRA ticket $response_key has been $note_verb.  You can view it at $jira_url/browse/$response_key."),'requester_id'=>"$pd_requester_id");
+    $data_json = json_encode($data);
+    http_request($url, $data_json, "POST", "token", "", $pd_api_token);
+  }
+  else {
+    //Update the PagerDuty ticket if the JIRA ticket isn't made.
+    $data = array('note'=>array('content'=>"There was an issue communicating with JIRA. $response"),'requester_id'=>"$pd_requester_id");
+    $data_json = json_encode($data);
+    http_request($url, $data_json, "POST", "token", "", $pd_api_token);
   }
 }
 
@@ -113,7 +131,7 @@ function http_request($url, $data_json, $method, $auth_type, $username, $token) 
     curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json','Content-Length: ' . strlen($data_json),"Authorization: Token token=$token"));
     curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_ANY);
   }
-  else if ($auth_type == "basic") {
+  elseif ($auth_type == "basic") {
     curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json','Content-Length: ' . strlen($data_json)));
     curl_setopt($ch, CURLOPT_HTTPAUTH, CURLAUTH_BASIC);
     curl_setopt($ch, CURLOPT_USERPWD, "$username:$token");
